@@ -38,7 +38,7 @@ public class GreenTripDataTest {
             final MessageType schema = reader.getFooter().getFileMetaData().getSchema();
             final JsonRecordFormatter.JsonGroupFormatter formatter = JsonRecordFormatter.fromSchema(schema);
             JSONArray jsonArray = new JSONArray();
-            for (PageReadStore page; (page = reader.readNextRowGroup()) != null;) {
+            for (PageReadStore page; (page = reader.readNextRowGroup()) != null; ) {
                 long rows = page.getRowCount();
                 final MessageColumnIO columnIO = new ColumnIOFactory().getColumnIO(schema);
                 final RecordReader<SimpleRecord> recordReader =
