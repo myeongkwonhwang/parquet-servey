@@ -2,7 +2,9 @@ package me.mkhwang.parquetservey.recorddata;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.parquet.column.page.PageReadStore;
 import org.apache.parquet.hadoop.ParquetFileReader;
@@ -16,11 +18,20 @@ import org.apache.parquet.tools.read.SimpleRecord;
 import org.apache.parquet.tools.read.SimpleRecordMaterializer;
 import org.json.JSONArray;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Objects;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
 public class GreenTripDataTest {
@@ -34,6 +45,7 @@ public class GreenTripDataTest {
                 new Path(file.getAbsolutePath()), new Configuration()))) {
             final MessageType schema = reader.getFooter().getFileMetaData().getSchema();
             final JsonRecordFormatter.JsonGroupFormatter formatter = JsonRecordFormatter.fromSchema(schema);
+            final ObjectMapper objectMapper = new ObjectMapper();
             JSONArray jsonArray = new JSONArray();
             for (PageReadStore page; (page = reader.readNextRowGroup()) != null; ) {
                 long rows = page.getRowCount();
@@ -43,17 +55,35 @@ public class GreenTripDataTest {
                 for (int i = 0; i < rows; i++) {
                     final SimpleRecord simpleRecord = recordReader.read();
                     final String record = formatter.formatRecord(simpleRecord);
-                    final ObjectMapper objectMapper = new ObjectMapper();
                     final String recordPretty = objectMapper.writerWithDefaultPrettyPrinter()
                             .writeValueAsString(objectMapper.readTree(record));
-//                    jsonArray.put(recordPretty);
-                    log.debug(recordPretty);
+                    jsonArray.put(recordPretty);
+//                    log.debug(recordPretty);
+//                    log.debug(record);
                 }
             }
-//            final java.nio.file.Path output = Paths.get("src", "test", "resources", fileName + ".json");
-//            Files.write(output, jsonArray.toString().getBytes(StandardCharsets.UTF_8));
+            final java.nio.file.Path output = Paths.get("src", "test", "resources", fileName + ".json");
+            Files.write(output, jsonArray.toString().getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
+        }
+    }
+
+    @Test
+    void copy(@TempDir final File tempDir) throws IOException {
+        final String fileName = "green_tripdata_2022-01.parquet";
+        final ClassLoader classLoader = getClass().getClassLoader();
+        final File file = new File(Objects.requireNonNull(classLoader.getResource(fileName)).getFile());
+        final Path path = new Path(file.getAbsolutePath());
+        final Configuration configuration = new Configuration();
+
+        try (FileSystem fileSystem = FileSystem.get(configuration)) {
+            try (InputStream in = fileSystem.open(path);
+                 OutputStream out = new FileOutputStream(File.createTempFile("tmp", null, tempDir))) {
+                final long length = IOUtils.copyLarge(in, out, new byte[8192]); // core-default.xml io.file.buffer.size default 4096
+                log.debug("length of {} : {}", path, length);
+                assertThat(length).isNotNegative();
+            }
         }
     }
 }
