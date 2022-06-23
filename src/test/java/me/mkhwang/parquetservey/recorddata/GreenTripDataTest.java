@@ -20,9 +20,6 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Objects;
 
 @Slf4j
@@ -49,11 +46,12 @@ public class GreenTripDataTest {
                     final ObjectMapper objectMapper = new ObjectMapper();
                     final String recordPretty = objectMapper.writerWithDefaultPrettyPrinter()
                             .writeValueAsString(objectMapper.readTree(record));
-                    jsonArray.put(recordPretty);
+//                    jsonArray.put(recordPretty);
+                    log.debug(recordPretty);
                 }
             }
-            final java.nio.file.Path output = Paths.get("src", "test", "resources", "output.txt");
-            Files.write(output, jsonArray.toString().getBytes(StandardCharsets.UTF_8));
+//            final java.nio.file.Path output = Paths.get("src", "test", "resources", fileName + ".json");
+//            Files.write(output, jsonArray.toString().getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
