@@ -80,7 +80,7 @@ public class GreenTripDataTest {
         try (FileSystem fileSystem = FileSystem.get(configuration)) {
             try (InputStream in = fileSystem.open(path);
                  OutputStream out = new FileOutputStream(File.createTempFile("tmp", null, tempDir))) {
-                final long length = IOUtils.copyLarge(in, out, new byte[8192]); // core-default.xml io.file.buffer.size default 4096
+                final long length = IOUtils.copyLarge(in, out, new byte[4096]); // core-default.xml io.file.buffer.size default 4096
                 log.debug("length of {} : {}", path, length);
                 assertThat(length).isNotNegative();
             }
